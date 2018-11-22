@@ -42,13 +42,13 @@ class Pair:
         return 'Pair({0}, {1})'.format(repr(self.first), repr(self.second))
 
     def __str__(self):
-        s = '(' + repl_str(self.first)
+        s = '(' + str(self.first)
         second = self.second
         while isinstance(second, Pair):
-            s += ' ' + repl_str(second.first)
+            s += ' ' + str(second.first)
             second = second.second
         if second is not nil:
-            s += ' . ' + repl_str(second)
+            s += ' . ' + str(second)
         return s + ')'
 
     def __len__(self):
@@ -92,10 +92,6 @@ nil = nil() # Assignment hides the nil class; there is only one instance
 
 # Scheme list parser
 
-# Quotation markers
-quotes = {"'":  'quote',
-          '`':  'quasiquote',
-          ',':  'unquote'}
 
 def scheme_read(src):
     """Read the next expression from SRC, a Buffer of tokens.
@@ -114,10 +110,13 @@ def scheme_read(src):
     val = src.remove_front() # Get the first token
     if val == 'nil':
         return nil
+
     elif val == '(':
         return read_tail(src)
-    elif val in quotes:
+
+    elif val == "'":
         return Pair('quote', Pair(scheme_read(src), nil))
+
     elif val not in DELIMITERS:
         return val
     else:
@@ -141,13 +140,14 @@ def read_tail(src):
             return nil
         elif src.current() == '.':
             src.remove_front()
-            first = scheme_read(src)
-            rest = read_tail
-            if rest != nil:
-                raise SyntaxError("Expected one element after")
-            return first
+            next_exp = scheme_read(src)
+            tail_exp = read_tail(src)
+            if tail_exp is not nil:
+                raise SyntaxError
+            return next_exp
         else:
             return Pair(scheme_read(src), read_tail(src))
+            
     except EOFError:
         raise SyntaxError('unexpected end of file')
 
@@ -169,17 +169,9 @@ def read_line(line):
     """Read a single string LINE as a Scheme expression."""
     return scheme_read(Buffer(tokenize_lines([line])))
 
-def repl_str(val):
-    """Should largely match str(val), except for booleans and undefined."""
-    if val is True:
-        return "#t"
-    if val is False:
-        return "#f"
-    if val is None:
-        return "undefined"
-    return str(val)
-
 # Interactive loop
+
+@main
 def read_print_loop():
     """Run a read-print loop for Scheme expressions."""
     while True:
@@ -194,8 +186,3 @@ def read_print_loop():
         except (KeyboardInterrupt, EOFError):  # <Control>-D, etc.
             print()
             return
-
-@main
-def main(*args):
-    if len(args) and '--repl' in args:
-        read_print_loop()

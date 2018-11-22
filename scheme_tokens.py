@@ -8,7 +8,7 @@ of tokens.  A token may be:
   * A delimiter, including parentheses, dots, and single quotes
 
 This file also includes some features of Scheme that have not been addressed
-in the course, such as Scheme strings.
+in the course, such as quasiquoting and Scheme strings.
 """
 
 from ucb import main
@@ -119,7 +119,8 @@ def tokenize_lines(input):
 
 def count_tokens(input):
     """Count the number of non-delimiter tokens in input."""
-    return len(list(itertools.chain(*tokenize_lines(input))))
+    return len(list(filter(lambda x: x not in DELIMITERS,
+                           itertools.chain(*tokenize_lines(input)))))
 
 @main
 def run(*args):
@@ -129,4 +130,4 @@ def run(*args):
                         type=argparse.FileType('r'), default=sys.stdin,
                         help='input file to be counted')
     args = parser.parse_args()
-    print('counted', count_tokens(args.file), 'tokens')
+    print('counted', count_tokens(args.file), 'non-delimiter tokens')
